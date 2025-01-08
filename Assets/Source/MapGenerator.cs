@@ -5,6 +5,14 @@ using System.Linq;
 public class MapGenerator : MonoBehaviour
 {
     [System.Serializable]
+    public class RegionConfig
+    {
+        public Vector2 center;
+        public Vector2 size;
+        public float density = 1f; // Higher density means nodes are more tightly clustered
+    }
+
+    [System.Serializable]
     public class NodeTypeConfig
     {
         public GameObject nodePrefab;
@@ -17,6 +25,14 @@ public class MapGenerator : MonoBehaviour
     private NodeTypeConfig generatorNodes;
     [SerializeField]
     private NodeTypeConfig consumerNodes;
+    [Header("Region Settings")]
+    [SerializeField]
+    private RegionConfig resourceRegion;
+    [SerializeField]
+    private RegionConfig generatorRegion;
+    [SerializeField]
+    private RegionConfig consumerRegion;
+
     [Header("Map Settings")]
     [SerializeField]
     private Vector2 mapSize = new Vector2(10f, 10f);  // Size of the map in units
@@ -46,7 +62,7 @@ public class MapGenerator : MonoBehaviour
         // Generate resource nodes
         for (int i = 0; i < resourceNodes.count; i++)
         {
-            Vector2 randomPosition = GetRandomPosition();
+            Vector2 randomPosition = GetRandomPosition(resourceRegion);
             GameObject nodeObj = Instantiate(resourceNodes.nodePrefab, 
                 new Vector3(randomPosition.x, randomPosition.y, 0), 
                 Quaternion.identity);
@@ -58,7 +74,7 @@ public class MapGenerator : MonoBehaviour
         // Generate generator nodes
         for (int i = 0; i < generatorNodes.count; i++)
         {
-            Vector2 randomPosition = GetRandomPosition();
+            Vector2 randomPosition = GetRandomPosition(generatorRegion);
             GameObject nodeObj = Instantiate(generatorNodes.nodePrefab, 
                 new Vector3(randomPosition.x, randomPosition.y, 0), 
                 Quaternion.identity);
@@ -70,7 +86,7 @@ public class MapGenerator : MonoBehaviour
         // Generate consumer nodes
         for (int i = 0; i < consumerNodes.count; i++)
         {
-            Vector2 randomPosition = GetRandomPosition();
+            Vector2 randomPosition = GetRandomPosition(consumerRegion);
             GameObject nodeObj = Instantiate(consumerNodes.nodePrefab, 
                 new Vector3(randomPosition.x, randomPosition.y, 0), 
                 Quaternion.identity);
@@ -157,11 +173,22 @@ public class MapGenerator : MonoBehaviour
         line.SetResourceFlowState(shouldFlow);
     }
 
-    private Vector2 GetRandomPosition()
+    private Vector2 GetRandomPosition(RegionConfig region = null)
     {
+        if (region == null)
+        {
+            return new Vector2(
+                Random.Range(-mapSize.x / 2, mapSize.x / 2),
+                Random.Range(-mapSize.y / 2, mapSize.y / 2));
+        }
+
+        // Generate position within the specified region with density-based spread
+        float spreadX = region.size.x / (2 * region.density);
+        float spreadY = region.size.y / (2 * region.density);
+        
         return new Vector2(
-            Random.Range(-mapSize.x / 2, mapSize.x / 2),
-            Random.Range(-mapSize.y / 2, mapSize.y / 2)
+            region.center.x + Random.Range(-spreadX, spreadX),
+            region.center.y + Random.Range(-spreadY, spreadY)
         );
     }
 }
